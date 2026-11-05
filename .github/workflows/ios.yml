@@ -1,0 +1,51 @@
+# 口袋代理原生 App:用 XcodeGen 生成工程,编译出未签名的 .ipa。
+# 用户用自己的 Apple ID 通过 AltStore / SideStore 签名安装(免费账号每 7 天续签一次)。
+name: iOS App
+on:
+  push:
+    paths: ['ios/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          cd ios && xcodegen generate
+      - name: Build (unsigned)
+        run: |
+          cd ios
+          xcodebuild -project PocketProxy.xcodeproj -target PocketProxy -configuration Release -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build > build.log 2>&1 || true
+          if ! grep -q "BUILD SUCCEEDED" build.log; then
+            # 把编译错误变成注解,在仓库页面和接口里都能看到
+            grep -E "error:" build.log | sort -u | head -40 | while IFS= read -r l; do echo "::error::$l"; done
+            tail -40 build.log
+            exit 1
+          fi
+          grep -E "warning:" build.log | sort -u | head -20 || true
+      - name: Package .ipa
+        run: |
+          cd ios
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/PocketProxy.app Payload/
+          zip -qr PocketProxy-unsigned.ipa Payload
+          ls -la PocketProxy-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PocketProxy-unsigned-ipa
+          path: ios/PocketProxy-unsigned.ipa
+      - name: Publish to release "ios-latest"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ios-latest
+          name: 口袋代理 iPhone App(测试版,未签名)
+          prerelease: true
+          files: ios/PocketProxy-unsigned.ipa
+          body: |
+            未签名的测试版安装包。用 AltStore 或 SideStore 加上你自己的 Apple ID 签名安装;免费 Apple ID 每 7 天要续签一次。
+            Unsigned test build. Sideload with AltStore or SideStore using your own Apple ID (free accounts re-sign every 7 days).

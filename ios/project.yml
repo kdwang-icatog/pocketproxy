@@ -1,0 +1,32 @@
+# 口袋代理原生 iPhone App 工程描述(XcodeGen)。GitHub Actions 用它生成 Xcode 工程并编译出未签名的 .ipa,
+# 用户用自己的 Apple ID 通过 AltStore / SideStore 签名安装。
+name: PocketProxy
+options:
+  bundleIdPrefix: io.github.pocketproxy
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  PocketProxy:
+    type: application
+    platform: iOS
+    sources: [PocketProxy]
+    info:
+      path: PocketProxy/Info.plist
+      properties:
+        CFBundleDisplayName: 口袋代理
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIBackgroundModes: [audio, location]
+        NSLocalNetworkUsageDescription: '口袋代理要在局域网里提供代理服务,让连着同一 Wi-Fi 或本机热点的电脑能连进来。'
+        NSLocationWhenInUseUsageDescription: '只在你打开"定位保活"时使用:iOS 只有在 App 使用定位时才允许它在后台一直运行,口袋代理借此在你切到别的 App 或锁屏后继续提供代理。位置不保存、不上传。'
+        NSLocationAlwaysAndWhenInUseUsageDescription: '只在你打开"定位保活"时使用:iOS 只有在 App 使用定位时才允许它在后台一直运行,口袋代理借此在你切到别的 App 或锁屏后继续提供代理。位置不保存、不上传。'
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.pocketproxy.app
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGNING_ALLOWED: "NO"
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGN_IDENTITY: ""

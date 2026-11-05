@@ -14,6 +14,46 @@ WORK=${POCKETPROXY_WORK:-$HOME/.pocketproxy-repos}     # 两个仓库的本地�
 export GIT_SSH_COMMAND=${GIT_SSH_COMMAND:-"ssh -o ConnectTimeout=20 -o Hostname=ssh.github.com -p 443"}
 FILES="pocketproxy.py pocketproxy.py.sig install.sh version.txt README.txt CHANGELOG.txt"
 SRC_FILES="pocketproxy.py install.sh keygen.sh publish.sh CHANGELOG.md RELEASE.md"
+# 仓库本地副本:没有就 clone;有就对齐远程(这两个副本只由本脚本写,不在里面手改)
+sync_repo() {  # $1=owner/name  $2=本地目录
+  if [ -d "$2/.git" ]; then
+    git -C "$2" fetch -q origin && git -C "$2" reset -q --hard origin/main
+  else
+    mkdir -p "$(dirname "$2")" && git clone -q -c core.autocrlf=false "git@github.com:$1.git" "$2" || return 1
+  fi
+  # 公开仓库用 GitHub 隐私邮箱提交,不暴露真实邮箱;不做换行转换(手机上的脚本必须是 LF)
+  git -C "$2" config core.autocrlf false
+  git -C "$2" config user.name "${GIT_PUB_NAME:-kdwang-icatog}"
+  git -C "$2" config user.email "${GIT_PUB_EMAIL:-279066644+kdwang-icatog@users.noreply.github.com}"
+  # 发布仓库在组织 ssdawjss 下,提交用中性署名,不关联个人账号
+  if [ "$1" = "$DIST_REPO" ]; then
+    git -C "$2" config user.name "release"
+    git -C "$2" config user.email "release@localhost.invalid"
+  fi
+  # 仓库转移后旧地址会跳转,远程地址跟着改成新的
+  git -C "$2" remote set-url origin "git@github.com:$1.git"
+}
+# 只有内容变了才提交并推送
+commit_push() {  # $1=本地目录 $2=提交说明
+  git -C "$1" add -A
+  if git -C "$1" diff --cached --quiet; then echo "     (没有变化)"; return 0; fi
+  git -C "$1" -c core.autocrlf=false commit -q -m "$2" && git -C "$1" push -q origin HEAD:main
+}
+
+# 仓库首页用中英文说明 README.github.md;给手机看的使用说明 README.md 在仓库里叫"使用说明.md";
+# 有 FUNDING.yml 就放到 .github/(仓库页的 Sponsor 按钮);ios/ 是原生 App 源码(带 GitHub Actions 编译)
+copy_src() {
+  cp $SRC_FILES "$S/" && cp README.github.md "$S/README.md" && cp README.md "$S/使用说明.md" || return 1
+  if [ -f FUNDING.yml ]; then mkdir -p "$S/.github" && cp FUNDING.yml "$S/.github/FUNDING.yml"; fi
+  if [ -d ios ]; then rm -rf "$S/ios" && cp -r ios "$S/ios"; fi
+  if [ -d ios/.github ]; then mkdir -p "$S/.github" && cp -r ios/.github/. "$S/.github/" && rm -rf "$S/ios/.github"; fi
+}
+# 只同步公开源码仓库(改原生 App 源码时用,不签名、不发布新版): SRC_ONLY=1 MSG="说明" sh publish.sh
+if [ "${SRC_ONLY:-}" = 1 ]; then
+  S="$WORK/src"
+  sync_repo "$SRC_REPO" "$S" && copy_src && commit_push "$S" "${MSG:-更新源码}" && echo "OK   源码已同步到 $SRC_REPO"
+  exit $?
+fi
 VER=$(sed -n "s/^VERSION = '\([0-9.]*\)'.*/\1/p" pocketproxy.py)
 [ -n "$VER" ] || { echo "pocketproxy.py 里找不到 VERSION"; exit 1; }
 grep -q "^$VER " CHANGELOG.md || { echo "CHANGELOG.md 里还没写 $VER 的更新记录"; exit 1; }
@@ -44,32 +84,6 @@ for f in $FILES; do
   [ "$a" = "$b" ] && echo "OK   香港 $f" || { echo "不一致 香港 $f(本地 $a 线上 $b)"; exit 1; }
 done
 
-# 仓库本地副本:没有就 clone;有就对齐远程(这两个副本只由本脚本写,不在里面手改)
-sync_repo() {  # $1=owner/name  $2=本地目录
-  if [ -d "$2/.git" ]; then
-    git -C "$2" fetch -q origin && git -C "$2" reset -q --hard origin/main
-  else
-    mkdir -p "$(dirname "$2")" && git clone -q -c core.autocrlf=false "git@github.com:$1.git" "$2" || return 1
-  fi
-  # 公开仓库用 GitHub 隐私邮箱提交,不暴露真实邮箱;不做换行转换(手机上的脚本必须是 LF)
-  git -C "$2" config core.autocrlf false
-  git -C "$2" config user.name "${GIT_PUB_NAME:-kdwang-icatog}"
-  git -C "$2" config user.email "${GIT_PUB_EMAIL:-279066644+kdwang-icatog@users.noreply.github.com}"
-  # 发布仓库在组织 ssdawjss 下,提交用中性署名,不关联个人账号
-  if [ "$1" = "$DIST_REPO" ]; then
-    git -C "$2" config user.name "release"
-    git -C "$2" config user.email "release@localhost.invalid"
-  fi
-  # 仓库转移后旧地址会跳转,远程地址跟着改成新的
-  git -C "$2" remote set-url origin "git@github.com:$1.git"
-}
-# 只有内容变了才提交并推送
-commit_push() {  # $1=本地目录 $2=提交说明
-  git -C "$1" add -A
-  if git -C "$1" diff --cached --quiet; then echo "     (没有变化)"; return 0; fi
-  git -C "$1" -c core.autocrlf=false commit -q -m "$2" && git -C "$1" push -q origin HEAD:main
-}
-
 # 2) GitHub 发布仓库(备用地址)。失败只提醒,香港那份已经能用
 D="$WORK/dist"
 if sync_repo "$DIST_REPO" "$D" && (cd "$T" && cp $FILES "$D/") && commit_push "$D" "口袋代理 $VER"; then
@@ -92,14 +106,6 @@ fi
 
 # 3) GitHub 公开代码仓库
 S="$WORK/src"
-# 仓库首页用中英文说明 README.github.md;给手机看的使用说明 README.md 在仓库里叫"使用说明.md";
-# 有 FUNDING.yml 就放到 .github/(仓库页的 Sponsor 按钮);ios/ 是原生 App 源码(带 GitHub Actions 编译)
-copy_src() {
-  cp $SRC_FILES "$S/" && cp README.github.md "$S/README.md" && cp README.md "$S/使用说明.md" || return 1
-  if [ -f FUNDING.yml ]; then mkdir -p "$S/.github" && cp FUNDING.yml "$S/.github/FUNDING.yml"; fi
-  if [ -d ios ]; then rm -rf "$S/ios" && cp -r ios "$S/ios"; fi
-  if [ -d ios/.github ]; then mkdir -p "$S/.github" && cp -r ios/.github/. "$S/.github/" && rm -rf "$S/ios/.github"; fi
-}
 if sync_repo "$SRC_REPO" "$S" && copy_src && commit_push "$S" "口袋代理 $VER"; then
   echo "OK   源码已同步到 $SRC_REPO"
 else
