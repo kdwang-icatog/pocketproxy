@@ -1,67 +1,79 @@
-口袋代理 PocketProxy 使用说明
-==============================
+# 口袋代理 PocketProxy
 
-把 iPhone 的网络(包括 iPhone 上 VPN 的流量)分享给电脑用。免费,装在 iPhone 的 iSH 里。
+[中文](#中文) · [English](#english)
 
-一、安装(只做一次)
-1. App Store 搜索安装 "iSH Shell"(免费)。
-2. 打开 iSH,输入下面这行,按换行键:
+---
+
+## 中文
+
+把 iPhone 的网络连接分享给同一局域网里的电脑:电脑把代理设成 iPhone 的地址,上网就走 iPhone 当前的网络(包括 iPhone 上 VPN 类 App 建立的连接)。
+
+**为什么需要它:** iPhone 的"个人热点"只分享蜂窝或 Wi-Fi 网络,不会把 iPhone 上 VPN App 的连接分享出去。口袋代理在 iPhone 上开一个代理服务,电脑经它上网,就能用到 iPhone 当前的全部网络。
+
+### 特点
+- 免费,装在免费的 [iSH Shell](https://apps.apple.com/app/id1436902243) 里,只用 Python 标准库。
+- 同一个端口支持 HTTP、HTTPS(CONNECT)和 SOCKS5,默认端口 8080,可改。
+- 热点和同一 Wi-Fi 两种连法都行,界面自动给出电脑要填的地址。
+- iPhone 上有网页界面(Safari 打开 `http://127.0.0.1:8090`):启动、停止、休息省电、连接数与流量、最近记录。
+- 自动升级:每个新版本都有作者的 Ed25519 签名,校验通过才安装。
+- 只接受局域网和本机的连接;不记录、不上传你访问的内容。问题报告由你手动发送,并去掉访问过的网站。
+
+### 安装
+1. App Store 安装免费的 **iSH Shell**。
+2. 打开 iSH,输入下面一行后回车(首次要装 Python,常要 5–15 分钟,请别切走):
+   ```
    apk add curl && curl -fsSL --resolve icatdog.dynv6.net:443:47.76.241.196 https://icatdog.dynv6.net/rpa-update/pocketproxy/install.sh | sh
-   香港服务器打不开时可以用备用地址(要能访问 GitHub):
+   ```
+   主地址打不开时用备用地址:
+   ```
    apk add curl && curl -fsSL https://raw.githubusercontent.com/ssdawjss/d-i13whabio2/main/install.sh | sh
-3. 第一次要装 python3,常要 5-15 分钟,期间别切走。弹出定位权限时选"允许"
-   (iOS 只有在用定位时才让 iSH 在后台继续运行,口袋代理不记录、不上传位置)。
-4. 最后显示"代理:运行中"和"电脑代理地址",就装好了。
+   ```
+3. 显示"代理:运行中"和电脑要填的地址,就装好了。
 
-二、每次使用的启动顺序
-1. iPhone:先连好 VPN。
-2. iPhone:打开 iSH,口袋代理会自动启动,并显示电脑要填的地址和端口(默认 8080)。
-   之后 iSH 可以切到后台,但别从多任务里划掉。
-3. 电脑:连 iPhone 的"个人热点",或者和 iPhone 连同一个 Wi-Fi。
-4. 电脑:把代理设成第 2 步显示的地址和端口。
-   - Windows:设置 → 网络和 Internet → 代理 → 手动设置代理。
-   - Mac:系统设置 → 网络 → 当前网络 → 详细信息 → 代理,勾选"网页代理(HTTP)"和"安全网页代理(HTTPS)"。
-   - 同一端口也支持 SOCKS5。
-5. 检查:电脑浏览器打开 http://地址:端口/ ,看到"代理:运行中"就是通的。
+详细用法、一键启动(快捷指令)、常见问题见 [使用说明](使用说明.md);每个版本的改动见 [更新记录](CHANGELOG.md)。
 
-说明:
-- 热点时地址固定是 172.20.10.1;同一 Wi-Fi 时是 iPhone 在这个 Wi-Fi 里的地址(可能会变,以 iSH 显示为准)。
-- VPN 先连后连都行,每个新连接都按当时的网络走;但 VPN 断开时,流量会直接走手机网络。
-- iPhone 重启或 iSH 被划掉后,重新打开 iSH 即可,会自动启动。
-- 电脑不用代理时,记得把电脑的代理关掉,否则 iPhone 不在旁边时电脑上不了网。
+### 已知限制
+- iSH 是模拟器,速度适合网页和聊天,不适合大文件。
+- iOS 会暂停后台 App。口袋代理用持续读取定位让 iSH 在后台继续运行(位置不保存、不上传);切到别的 App 后仍可能被暂停,切回即恢复。原生 App 版本正在开发。
+- 请遵守你所在地区的法律法规使用。
 
-一键启动(不用手动开 iSH,设一次就行):
-iSH 不支持被网页直接打开,借 iPhone 自带的"快捷指令":
-1. 快捷指令 → "+" 新建 → 添加"打开 App"选 iSH → 添加"等待"3 秒 → 添加"打开 URL"填 http://127.0.0.1:8090。
-2. 命名为"启动口袋代理",分享 →"添加到主屏幕"。以后点这个图标就自动打开 iSH、启动代理、显示界面。
-3. 想全自动:快捷指令 →"自动化"→"+"→"无线局域网"(连上家里 Wi-Fi 时)或"充电器"(插上电时)
-   → 运行"启动口袋代理"→ 选"立即运行"。
+### 反馈与支持
+- 界面"遇到问题"→"生成问题报告",复制后发到 pocket-feedback.ride078@passinbox.com 。
 
-三、界面
-iPhone 的 Safari 打开 http://127.0.0.1:8090(可以"添加到主屏幕"):
-显示地址和端口、改端口、启动/停止、连接数和流量、最近记录、版本与升级。
-- "停止":只停代理。
-- "停止并让 iSH 休息(省电)":代理和定位都停,iOS 随后让 iSH 休眠,不耗电。
-  之后切回 iSH 或点"启动口袋代理"图标,代理会自动恢复。
+---
 
-四、升级
-- 不用管:程序每小时检查一次,有新版本就在没有连接时自动升级,升级后自动重启。
-- 想马上升级:界面上出现"有新版本"时,点"升级到新版本"(打开界面时也会检查)。
-- 新版起不来会自动换回旧版。
-- 也可以在 iSH 里重新运行安装那一行命令,效果一样,设置保留。
-- 每个版本改了什么,见更新记录:https://icatdog.dynv6.net/rpa-update/pocketproxy/CHANGELOG.txt
+## English
 
-五、有问题时
-- 电脑浏览器打开 http://地址:端口/log ,能看到最近 300 条连接记录和错误。
-- iSH 里的日志文件:/root/pocketproxy.log(启动、停止、升级、出错)。
-- 热点下电脑拿到 169.254 开头的地址 = 没连上热点:iPhone 个人热点打开"最大兼容性",电脑断开重连。
-- iSH 自己消失(被 iOS 关掉):重新打开 iSH 即可,会自动启动。想确认是不是内存不够被关的:iPhone"设置 → 隐私与安全性 →
-  分析与改进 → 分析数据",看有没有当时的 JetsamEvent 记录。电脑全部流量都走代理时最容易出现,可以只让浏览器走代理。
-- 有些路由器开了"客户端隔离",同一 Wi-Fi 下设备互相连不上,这时改用热点。
-- 问题自己解决不了:iPhone 上打开界面 http://127.0.0.1:8090,在"遇到问题"里点"生成问题报告",
-  在最上面写一句发生了什么,再"复制报告"发给作者,或者点"用邮件发送"(发到 pocket-feedback.ride078@passinbox.com)。
-  报告里不含你访问过的网站;只发正文,不要带附件。
+Share your iPhone's network connection with a computer on the same local network. Point the computer's proxy at the iPhone, and its traffic goes out through whatever network the iPhone is using — including connections set up by a VPN app on the iPhone.
 
-六、安全
-- 每个新版本都有作者的签名,手机上校验通过才会安装,下载地址被人改了也装不上假版本。
-- 代理只接受局域网和本机的连接,不记录、不上传你访问的内容。
+**Why:** iOS Personal Hotspot shares the cellular or Wi-Fi connection, but not the connection of a VPN app running on the iPhone. PocketProxy runs a small proxy server on the iPhone so a computer can use the iPhone's full network setup.
+
+### Features
+- Free. Runs inside the free [iSH Shell](https://apps.apple.com/app/id1436902243) app, Python standard library only.
+- HTTP, HTTPS (CONNECT) and SOCKS5 on one port (default 8080, configurable).
+- Works over Personal Hotspot or a shared Wi-Fi network; the UI shows the address to enter on the computer.
+- Web UI on the iPhone (`http://127.0.0.1:8090` in Safari): start, stop, rest mode to save battery, connection and traffic stats, recent log.
+- Auto-update: every release is Ed25519-signed and only installed after the signature checks out.
+- Accepts connections from the local network and the iPhone itself only. Nothing you browse is recorded or uploaded; problem reports are sent manually by you, with visited sites removed.
+
+### Install
+1. Install the free **iSH Shell** app from the App Store.
+2. In iSH, run (the first run installs Python and can take 5–15 minutes; keep iSH in the foreground):
+   ```
+   apk add curl && curl -fsSL --resolve icatdog.dynv6.net:443:47.76.241.196 https://icatdog.dynv6.net/rpa-update/pocketproxy/install.sh | sh
+   ```
+   Fallback mirror:
+   ```
+   apk add curl && curl -fsSL https://raw.githubusercontent.com/ssdawjss/d-i13whabio2/main/install.sh | sh
+   ```
+3. When it shows the proxy as running together with the address for your computer, you're done.
+
+The detailed guide (in Chinese) is in [使用说明.md](使用说明.md); release notes are in [CHANGELOG.md](CHANGELOG.md).
+
+### Known limitations
+- iSH is an emulator: fine for browsing and chat, slow for large downloads.
+- iOS suspends background apps. PocketProxy keeps iSH running by reading location continuously (location is never stored or uploaded); iSH may still be paused after switching to another app and resumes when you switch back. A native app is in development.
+- Use it in accordance with the laws where you live.
+
+### Feedback and support
+- In the UI, tap "生成问题报告" (create problem report), copy it and send it to pocket-feedback.ride078@passinbox.com.

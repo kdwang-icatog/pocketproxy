@@ -13,7 +13,7 @@ WORK=${POCKETPROXY_WORK:-$HOME/.pocketproxy-repos}     # 两个仓库的本地�
 # GitHub 的 22 端口常被重置,默认走 ssh.github.com:443
 export GIT_SSH_COMMAND=${GIT_SSH_COMMAND:-"ssh -o ConnectTimeout=20 -o Hostname=ssh.github.com -p 443"}
 FILES="pocketproxy.py pocketproxy.py.sig install.sh version.txt README.txt CHANGELOG.txt"
-SRC_FILES="pocketproxy.py install.sh keygen.sh publish.sh README.md CHANGELOG.md RELEASE.md"
+SRC_FILES="pocketproxy.py install.sh keygen.sh publish.sh CHANGELOG.md RELEASE.md"
 VER=$(sed -n "s/^VERSION = '\([0-9.]*\)'.*/\1/p" pocketproxy.py)
 [ -n "$VER" ] || { echo "pocketproxy.py 里找不到 VERSION"; exit 1; }
 grep -q "^$VER " CHANGELOG.md || { echo "CHANGELOG.md 里还没写 $VER 的更新记录"; exit 1; }
@@ -92,7 +92,15 @@ fi
 
 # 3) GitHub 公开代码仓库
 S="$WORK/src"
-if sync_repo "$SRC_REPO" "$S" && cp $SRC_FILES "$S/" && commit_push "$S" "口袋代理 $VER"; then
+# 仓库首页用中英文说明 README.github.md;给手机看的使用说明 README.md 在仓库里叫"使用说明.md";
+# 有 FUNDING.yml 就放到 .github/(仓库页的 Sponsor 按钮);ios/ 是原生 App 源码(带 GitHub Actions 编译)
+copy_src() {
+  cp $SRC_FILES "$S/" && cp README.github.md "$S/README.md" && cp README.md "$S/使用说明.md" || return 1
+  if [ -f FUNDING.yml ]; then mkdir -p "$S/.github" && cp FUNDING.yml "$S/.github/FUNDING.yml"; fi
+  if [ -d ios ]; then rm -rf "$S/ios" && cp -r ios "$S/ios"; fi
+  if [ -d ios/.github ]; then mkdir -p "$S/.github" && cp -r ios/.github/. "$S/.github/" && rm -rf "$S/ios/.github"; fi
+}
+if sync_repo "$SRC_REPO" "$S" && copy_src && commit_push "$S" "口袋代理 $VER"; then
   echo "OK   源码已同步到 $SRC_REPO"
 else
   echo "提醒:源码同步到 $SRC_REPO 失败(发布不受影响)"
