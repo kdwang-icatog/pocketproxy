@@ -6,8 +6,8 @@ A. 签名密钥:在自己的电脑上(Windows 用 Git Bash)运行 sh docs/pocket
      绝不能放进 git、香港服务器、网盘;丢了就发不了新版(已装的手机只能重新运行安装命令)。
    - 公钥会写进 pocketproxy.py 的 SIGN_PUBKEY 和 install.sh 的 PUBKEY,这两个文件要 git 提交(公钥可以公开)。
 B. GitHub 两个公开仓库(都在网页上新建,勾选"Add a README file",默认分支 main):
-   - 发布仓库 kdwang-icatog/d-i13whabio2:只放发布文件(程序、签名、安装脚本、版本号、说明),当备用下载地址,
-     手机从 https://raw.githubusercontent.com/kdwang-icatog/d-i13whabio2/main/ 下载。名字故意不带 pocketproxy。
+   - 发布仓库 ssdawjss/d-i13whabio2(组织 ssdawjss,地址里不出现个人账号名):只放发布文件(程序、签名、安装脚本、版本号、说明),当备用下载地址,
+     手机从 https://raw.githubusercontent.com/ssdawjss/d-i13whabio2/main/ 下载。名字故意不带 pocketproxy。
    - 源码仓库 kdwang-icatog/pocketproxy:公开源码(本目录除"上架评估.md"外的文件)。
    publish.sh 用本机 SSH 密钥推送这两个仓库(本地副本在 ~/.pocketproxy-repos/,只由脚本写),不需要 gh 命令行。
    换仓库名的话,改 pocketproxy.py 的 GITHUB_BASE、install.sh 的 GH、README.md 的备用安装命令,

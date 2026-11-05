@@ -7,7 +7,7 @@ set -e
 cd "$(dirname "$0")"
 KEY=${POCKETPROXY_KEY:-$HOME/.pocketproxy-sign/ed25519.pem}
 HK=${HK_SSH:-root@47.76.241.196}
-DIST_REPO=${DIST_REPO:-kdwang-icatog/d-i13whabio2}   # 只放发布文件,名字故意不带 pocketproxy
+DIST_REPO=${DIST_REPO:-ssdawjss/d-i13whabio2}   # 只放发布文件,名字故意不带 pocketproxy
 SRC_REPO=${SRC_REPO:-kdwang-icatog/pocketproxy}       # 公开源码
 WORK=${POCKETPROXY_WORK:-$HOME/.pocketproxy-repos}     # 两个仓库的本地副本放这里(不在本仓库里)
 # GitHub 的 22 端口常被重置,默认走 ssh.github.com:443
@@ -55,6 +55,13 @@ sync_repo() {  # $1=owner/name  $2=本地目录
   git -C "$2" config core.autocrlf false
   git -C "$2" config user.name "${GIT_PUB_NAME:-kdwang-icatog}"
   git -C "$2" config user.email "${GIT_PUB_EMAIL:-279066644+kdwang-icatog@users.noreply.github.com}"
+  # 发布仓库在组织 ssdawjss 下,提交用中性署名,不关联个人账号
+  if [ "$1" = "$DIST_REPO" ]; then
+    git -C "$2" config user.name "release"
+    git -C "$2" config user.email "release@localhost.invalid"
+  fi
+  # 仓库转移后旧地址会跳转,远程地址跟着改成新的
+  git -C "$2" remote set-url origin "git@github.com:$1.git"
 }
 # 只有内容变了才提交并推送
 commit_push() {  # $1=本地目录 $2=提交说明
